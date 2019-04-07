@@ -131,8 +131,8 @@ void mulccsMatrixParallelVersion(const ccsMatrix& A,
     size_t m = B.indexCol.size(), n = AT.indexCol.size();
 
     tbb::parallel_for(0, static_cast<int>(m - 1), [&](size_t j) {
-        size_t i, x, y, l, k;
-        for (i = 0; i < n - 1; ++i) {
+        size_t i = 0, x = 0, y = 0, l = 0, k = 0;
+        for ( ; i < n - 1; ++i) {
             double sum = 0;
             x = AT.indexCol[i + 1], y = B.indexCol[j + 1];
             for (k = AT.indexCol[i]; k < x; ++k) {
