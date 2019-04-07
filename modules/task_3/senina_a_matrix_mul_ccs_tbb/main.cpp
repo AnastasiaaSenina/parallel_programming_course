@@ -1,5 +1,4 @@
 //  Copyright 2019 Senina Anastasia
-#include <omp.h>
 #include <tbb/tbb.h>
 #include <iostream>
 #include <vector>
@@ -88,10 +87,10 @@ ccsMatrix transpon(const ccsMatrix& A) {
 }
 
 void mulccsMatrix(const ccsMatrix& A, const ccsMatrix& B, ccsMatrix* resultC) {
-    double t1 = omp_get_wtime();
+    tbb::tick_count t1 = tbb::tick_count::now();
     ccsMatrix AT = transpon(A);
-    double t2 = omp_get_wtime();
-    std::cout << " time transpose : " << t2 - t1 << std::endl;
+    tbb::tick_count t2 = tbb::tick_count::now();
+    std::cout << " time transpose : " << (t2 - t1).seconds() << std::endl;
     size_t m = B.indexCol.size(), n = AT.indexCol.size();
     size_t r = 0;
     for (size_t j = 0; j < m - 1; ++j) {
@@ -124,10 +123,10 @@ void mulccsMatrixParallelVersion(const ccsMatrix& A,
     std::vector<std::vector<size_t>> row(size);
     std::vector<size_t> index_col(size + 1);
 
-    double t1 = omp_get_wtime();
+    tbb::tick_count t1 = tbb::tick_count::now();
     ccsMatrix AT = transpon(A);
-    double t2 = omp_get_wtime();
-    std::cout << " time transpose : " << t2 - t1 << std::endl;
+    tbb::tick_count t2 = tbb::tick_count::now();
+    std::cout << " time transpose : " << (t2 - t1).seconds() << std::endl;
     size_t m = B.indexCol.size(), n = AT.indexCol.size();
 
     tbb::parallel_for(0, static_cast<int>(m - 1), [&](size_t j) {
@@ -190,7 +189,7 @@ std::vector<std::vector<double>> mulMatrix(std::vector<std::vector<double>> A,
 }
 
 int main(int argc, char** argv) {
-    omp_set_num_threads(4);
+    //  tbb::task_scheduler_init(4);
     size_t size = 50;
     if (argc == 2) {
         size = atoi(argv[1]);
@@ -203,24 +202,26 @@ int main(int argc, char** argv) {
     ccsMatrix ccsB(B);
 
     std::cout << " start A * B .." << std::endl;
-    double t1 = omp_get_wtime();
+    tbb::tick_count t1 = tbb::tick_count::now();
     std::vector<std::vector<double>> C = mulMatrix(A, B);
-    double t2 = omp_get_wtime();
-    std::cout << " time A * B : " << t2 - t1 << std::endl;
+    tbb::tick_count t2 = tbb::tick_count::now();
+    std::cout << " time A * B : " << (t2 - t1).seconds() << std::endl;
 
     ccsMatrix serial_C(size, 0);
     std::cout << " start ccsA * ccsB .." << std::endl;
-    t1 = omp_get_wtime();
+    t1 = tbb::tick_count::now();
     mulccsMatrix(ccsA, ccsB, &serial_C);
-    t2 = omp_get_wtime();
-    std::cout << " time ccsA * ccsB : " << t2 - t1 << std::endl;
+    t2 = tbb::tick_count::now();
+    std::cout << " time ccsA * ccsB : " << (t2 - t1).seconds() << std::endl;
 
     std::cout << " start  parallel ccsA * ccsB .." << std::endl;
-    t1 = omp_get_wtime();
+
     ccsMatrix parallel_C(size, 0);
+    t1 = tbb::tick_count::now();
     mulccsMatrixParallelVersion(ccsA, ccsB, &parallel_C);
-    t2 = omp_get_wtime();
-    std::cout << " time parallel ccsA * ccsB : " << t2 - t1 << std::endl;
+    t2 = tbb::tick_count::now();
+    std::cout << " time parallel ccsA * ccsB : " << (t2 - t1).seconds()
+              << std::endl;
 
     std::cout << " NZ ccsA :" << ccsA.value.size() << std::endl;
     std::cout << " NZ ccsB :" << ccsB.value.size() << std::endl;
