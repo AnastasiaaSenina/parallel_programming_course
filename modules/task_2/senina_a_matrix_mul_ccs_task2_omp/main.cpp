@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <algorithm>
 
 struct ccsMatrix {
     std::vector<double> value;
@@ -112,7 +113,9 @@ void mulccsMatrix(const ccsMatrix& A, const ccsMatrix& B, ccsMatrix* resultC) {
         resultC->indexCol[j + 1] += resultC->indexCol[j];
     }
 }
-ccsMatrix mulccsMatrixParallelVersion(const ccsMatrix& A, const ccsMatrix& B, ccsMatrix &C) {
+void mulccsMatrixParallelVersion(const ccsMatrix& A,
+                                      const ccsMatrix& B,
+                                      ccsMatrix* C) {
     size_t size = A.indexCol.size() - 1;
     std::vector< std::vector<double>> values(size);
     std::vector<std::vector<size_t>> row(size);
@@ -125,7 +128,7 @@ ccsMatrix mulccsMatrixParallelVersion(const ccsMatrix& A, const ccsMatrix& B, cc
     size_t m = B.indexCol.size(), n = AT.indexCol.size();
     size_t i, x, y, l, k;
     int j;
-    #pragma omp parallel for private(i, x, y, l, k) 
+    #pragma omp parallel for private(i, x, y, l, k)
     for (j = 0; j < m - 1; ++j) {
         for (i = 0; i < n - 1; ++i) {
             double sum = 0;
@@ -138,7 +141,7 @@ ccsMatrix mulccsMatrixParallelVersion(const ccsMatrix& A, const ccsMatrix& B, cc
                     }
                 }
             }
-            if (sum != 0) {                
+            if (sum != 0) {
                 values[j].push_back(sum);
                 row[j].push_back(i);
                 index_col[j]++;
@@ -151,13 +154,13 @@ ccsMatrix mulccsMatrixParallelVersion(const ccsMatrix& A, const ccsMatrix& B, cc
         index_col[i] = NZ;
         NZ += p;
     }
-    C.value.resize(NZ);
-    C.row.resize(NZ);
-    C.indexCol.resize(size + 1);
+    C->value.resize(NZ);
+    C->row.resize(NZ);
+    C->indexCol.resize(size + 1);
     std::vector<std::vector<double>>::iterator itv = values.begin();
     std::vector<std::vector<size_t>>::iterator itr = row.begin();
-    std::vector<double>::iterator itCv = C.value.begin();
-    std::vector<size_t>::iterator itCr = C.row.begin();
+    std::vector<double>::iterator itCv = C->value.begin();
+    std::vector<size_t>::iterator itCr = C->row.begin();
     size_t count;
     for ( ; itv != values.end(); ++itv, ++itr) {
         count = (*itr).size();
@@ -167,9 +170,8 @@ ccsMatrix mulccsMatrixParallelVersion(const ccsMatrix& A, const ccsMatrix& B, cc
         itCv += count;
     }
     index_col[size] = NZ;
-    std::copy(index_col.begin(), index_col.end(), C.indexCol.begin());
-    return C;
-} 
+    std::copy(index_col.begin(), index_col.end(), C->indexCol.begin());
+}
 std::vector<std::vector<double>> mulMatrix(std::vector<std::vector<double>> A,
     std::vector<std::vector<double>> B) {
     size_t N = A.size();
@@ -214,7 +216,7 @@ int main(int argc, char** argv) {
     std::cout << " start ccsA * ccsB (parallel version) .." << std::endl;
     t1 = omp_get_wtime();
     ccsMatrix parallel_C(size, 0);
-    mulccsMatrixParallelVersion(ccsA, ccsB, parallel_C);
+    mulccsMatrixParallelVersion(ccsA, ccsB, &parallel_C);
     t2 = omp_get_wtime();
     std::cout << " time parallel ccsA * ccsB : " << t2 - t1 << std::endl;
 
