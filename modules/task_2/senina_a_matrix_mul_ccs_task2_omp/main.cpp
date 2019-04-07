@@ -125,7 +125,8 @@ void mulccsMatrixParallelVersion(const ccsMatrix& A,
     ccsMatrix AT = transpon(A);
     double t2 = omp_get_wtime();
     std::cout << " time transpose : " << t2 - t1 << std::endl;
-    size_t m = B.indexCol.size(), n = AT.indexCol.size();
+    int m = static_cast<int>(B.indexCol.size());
+    size_t n = AT.indexCol.size();
     size_t i, x, y, l, k;
     int j;
     #pragma omp parallel for private(i, x, y, l, k)
